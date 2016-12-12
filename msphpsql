@@ -1,0 +1,105 @@
+#Download base image ubuntu 16.04
+
+FROM ubuntu:16.04
+
+# Update Ubuntu Software repository
+RUN apt-get update && \
+	apt-get -y install \
+	libxml2-dev \
+	gcc	\
+	g++ \
+	autoconf \
+	curl \
+	make \
+	locales \
+	apt-transport-https	 \
+	apt-utils \
+	php7.0	\	
+	php7.0-dev \
+	unzip && apt-get clean
+	
+
+#Download PHP-7.0.12 & build it.
+#RUN curl -o php-7.0.12.tar.gz	http://www.php.net/distributions/php-7.0.12.tar.gz	
+#RUN tar -xzf php-7.0.12.tar.gz 
+
+# Found some times giving error like gzip: stdin: not in gzip format...
+#RUN curl http://www.php.net/distributions/php-7.0.12.tar.gz | tar -xz
+
+#Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
+#Instead of installing git we are trying to get Source code from zip
+
+# set locale to utf-8
+RUN locale-gen en_US.UTF-8
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+#Copy source code in EXT dir.
+
+#RUN cp -r /REPO/msphpsql-PHP-7.0-Linux/source/* /php-7.0.12/ext/
+
+#install ODBC driver
+
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+#RUN echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/mssql-ubuntu-xenial-release/ xenial main" > /etc/apt/sources.list.d/mssqlpreview.list
+#RUN apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+RUN apt-get update
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools unixodbc-dev-utf16
+
+RUN curl -sSL -o PHP-7.0-Linux.zip https://github.com/bob1913/msphpsql/archive/PHP-7.0-Linux.zip
+RUN unzip PHP-7.0-Linux.zip -d /REPO/
+
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/source/ 
+
+RUN /bin/bash -c "./packagize.sh"
+
+RUN echo "extension = pdo_sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+RUN echo "extension = sqlsrv.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/source/sqlsrv
+RUN phpize && ./configure && make && make install
+
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/source/pdo_sqlsrv
+RUN phpize && ./configure && make && make install
+
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/Autonomous
+RUN sed -i -e 's/localhost/sql/g' ./test/Autonomous/autonomous_setup.php
+
+
+# Build actual driver.
+
+#WORKDIR /php-7.0.12
+#RUN ./buildconf --force
+#RUN ./configure --prefix=/usr          	 \
+#			--sysconfdir=/etc            \
+#			--localstatedir=/var         \
+#			--datadir=/usr/share/php     \
+#			--mandir=/usr/share/man      \
+#			--enable-fpm                 \
+#			--with-fpm-user=apache       \
+#			--with-fpm-group=apache      \
+#			--with-config-file-path=/etc \
+#			--enable-calendar            \
+#			--enable-ftp                 \
+#			--with-gettext               \
+#			--enable-mbstring            \
+#			--enable-sqlsrv=shared 		 \
+# 			--with-pdo_sqlsrv=shared
+
+# RUN make clean && make install && install -v -m644 php.ini-production /etc/php.ini 
+
+# Enable apache mods.
+#RUN a2enmod php7.0
+#RUN a2enmod rewrite
+
+# Apache Configuration
+#COPY /conf/apache-config.conf /etc/apache2/sites-enabled/000-default.conf
+#COPY /test/testsql.php /var/www/html/
+#COPY /test/phpinfo.php /var/www/html/
+
+#Test...
+#RUN ls -la /etc/php
+#RUN ls -la /etc/php*
+
+#EXPOSE 80
