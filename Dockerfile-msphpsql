@@ -64,7 +64,7 @@ WORKDIR /REPO/msphpsql-PHP-7.0-Linux/source/pdo_sqlsrv
 RUN phpize && ./configure && make && make install
 
 WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/Autonomous
-RUN sed -i -e 's/localhost/sql/g' ./test/Autonomous/autonomous_setup.php
+RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
 
 
 # Build actual driver.
