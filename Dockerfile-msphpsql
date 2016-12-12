@@ -98,7 +98,7 @@ RUN sed -i -e 's/localhost/sql/g' ./test/Autonomous/autonomous_setup.php
 #COPY /test/testsql.php /var/www/html/
 #COPY /test/phpinfo.php /var/www/html/
 
-#Test...
+# Test...
 #RUN ls -la /etc/php
 #RUN ls -la /etc/php*
 
