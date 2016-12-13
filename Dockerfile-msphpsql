@@ -3,7 +3,7 @@
 FROM ubuntu:16.04
 
 # Update Ubuntu Software repository
-RUN apt-get update && \
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
 	apt-get -y install \
 	libxml2-dev \
 	gcc	\
@@ -65,6 +65,9 @@ RUN phpize && ./configure && make && make install
 
 WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/Autonomous
 RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+
+ENV REPORT_EXIT_STATUS 1
+ENV TEST_PHP_EXECUTABLE /usr/bin/php
 
 
 # Build actual driver.
