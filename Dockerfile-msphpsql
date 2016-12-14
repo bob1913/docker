@@ -19,23 +19,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
 	unzip && apt-get clean
 	
 
-#Download PHP-7.0.12 & build it.
-#RUN curl -o php-7.0.12.tar.gz	http://www.php.net/distributions/php-7.0.12.tar.gz	
-#RUN tar -xzf php-7.0.12.tar.gz 
-
-# Found some times giving error like gzip: stdin: not in gzip format...
-#RUN curl http://www.php.net/distributions/php-7.0.12.tar.gz | tar -xz
-
-#Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
-#Instead of installing git we are trying to get Source code from zip
-
 # set locale to utf-8
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
-
-#Copy source code in EXT dir.
-
-#RUN cp -r /REPO/msphpsql-PHP-7.0-Linux/source/* /php-7.0.12/ext/
 
 #install ODBC driver
 
@@ -47,6 +33,9 @@ RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt
 RUN apt-get update
 RUN ACCEPT_EULA=Y apt-get install -y msodbcsql mssql-tools unixodbc-dev-utf16
 
+#Either Install git / download zip (One can see other strategies : https://ryanfb.github.io/etc/2015/07/29/git_strategies_for_docker.html )
+#Instead of installing git we are trying to get Source code from zip
+#replace with your repository/branch as appropriate
 RUN curl -sSL -o PHP-7.0-Linux.zip https://github.com/bob1913/msphpsql/archive/PHP-7.0-Linux.zip
 RUN unzip PHP-7.0-Linux.zip -d /REPO/
 
@@ -63,46 +52,12 @@ RUN phpize && ./configure && make && make install
 WORKDIR /REPO/msphpsql-PHP-7.0-Linux/source/pdo_sqlsrv
 RUN phpize && ./configure && make && make install
 
-WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/Autonomous
+# set name of sql server host to use: sql
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/pdo_sqlsrv
+RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
+
+WORKDIR /REPO/msphpsql-PHP-7.0-Linux/test/sqlsrv
 RUN sed -i -e 's/localhost/sql/g' autonomous_setup.php
 
 ENV REPORT_EXIT_STATUS 1
 ENV TEST_PHP_EXECUTABLE /usr/bin/php
-
-
-# Build actual driver.
-
-#WORKDIR /php-7.0.12
-#RUN ./buildconf --force
-#RUN ./configure --prefix=/usr          	 \
-#			--sysconfdir=/etc            \
-#			--localstatedir=/var         \
-#			--datadir=/usr/share/php     \
-#			--mandir=/usr/share/man      \
-#			--enable-fpm                 \
-#			--with-fpm-user=apache       \
-#			--with-fpm-group=apache      \
-#			--with-config-file-path=/etc \
-#			--enable-calendar            \
-#			--enable-ftp                 \
-#			--with-gettext               \
-#			--enable-mbstring            \
-#			--enable-sqlsrv=shared 		 \
-# 			--with-pdo_sqlsrv=shared
-
-# RUN make clean && make install && install -v -m644 php.ini-production /etc/php.ini 
-
-# Enable apache mods.
-#RUN a2enmod php7.0
-#RUN a2enmod rewrite
-
-# Apache Configuration
-#COPY /conf/apache-config.conf /etc/apache2/sites-enabled/000-default.conf
-#COPY /test/testsql.php /var/www/html/
-#COPY /test/phpinfo.php /var/www/html/
-
-# Test...
-#RUN ls -la /etc/php
-#RUN ls -la /etc/php*
-
-#EXPOSE 80
